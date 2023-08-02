@@ -1,4 +1,0 @@
-spring:
-  config:
-    import:
-      - classpath:One-Pick-Security/application.yml
