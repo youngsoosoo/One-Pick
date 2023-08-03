@@ -1,6 +1,7 @@
 package com.onepick.one_pick.entity;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.persistence.ElementCollection;
@@ -9,6 +10,7 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,6 +46,9 @@ public class Member extends BaseEntity {
     @ElementCollection(fetch = FetchType.LAZY)
     @Builder.Default
     private Set<MemberRole> roleSet = new HashSet<>();
+
+    @OneToMany(mappedBy = "member")
+    private List<Image> images;
 
     public void changePassword(String memberPassword){
         this.memberPassword = memberPassword;

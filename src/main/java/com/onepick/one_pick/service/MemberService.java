@@ -82,4 +82,10 @@ public class MemberService {
             throw new RuntimeException("비밀번호가 다릅니다.");
         }
     }
+
+    // 회원 정보 찾기
+    public Member findMember(Long memberId){
+
+        return memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("회원 정보 찾기 실패"));
+    }
 }
