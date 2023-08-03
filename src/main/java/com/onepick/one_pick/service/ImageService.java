@@ -9,6 +9,8 @@ import com.onepick.one_pick.entity.Image;
 import com.onepick.one_pick.entity.Member;
 import com.onepick.one_pick.repository.ImageRepository;
 import com.onepick.one_pick.service.dto.ImageRequestDTO;
+import com.onepick.one_pick.service.dto.ImageSearchRequestDTO;
+import com.onepick.one_pick.service.dto.ImageSearchResponseDTO;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -37,5 +39,14 @@ public class ImageService {
         });
 
         imageRepository.saveAll(images);
+    }
+
+    public ImageSearchResponseDTO searchImage(ImageSearchRequestDTO imageSearchRequestDTO){
+
+        Member member = memberService.findMember(imageSearchRequestDTO.getMemberId());
+        List<Image> images = imageRepository.findByMember(member);
+        log.info("키워드 출력: " + imageSearchRequestDTO.getKeyword());
+        // AI 모델에 검색을 유도하는 메시지 전달
+        return new ImageSearchResponseDTO(new ArrayList<>());
     }
 }
