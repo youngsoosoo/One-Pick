@@ -1,5 +1,7 @@
 package com.onepick.one_pick.service;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -8,6 +10,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.imageio.ImageIO;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -64,7 +68,7 @@ public class ImageService {
     private String apiUrl;
 
     // 이미지 검색 메서드
-    public List<String> searchImage(ImageSearchRequestDTO imageSearchRequestDTO) throws Exception {
+    public List<byte[]> searchImage(ImageSearchRequestDTO imageSearchRequestDTO) throws Exception {
 
         String keyword = imageSearchRequestDTO.getKeyword();
         Long memberId = imageSearchRequestDTO.getMemberId();
@@ -105,9 +109,9 @@ public class ImageService {
     /**
      * S3 bucket 파일 다운로드
      */
-    public List<String> getObject(List<String> fileNameList, Long memberId) throws IOException {
+    public List<byte[]> getObject(List<String> fileNameList, Long memberId) throws IOException {
 
-        List<String> imageList = new ArrayList<>();
+        List<byte[]> imageList = new ArrayList<>();
         fileNameList.forEach(fileName -> {
 
             try {
@@ -115,7 +119,9 @@ public class ImageService {
                 S3ObjectInputStream objectInputStream = o.getObjectContent();
 
                 byte[] bytes = IOUtils.toByteArray(objectInputStream);
-                imageList.add(Arrays.toString(bytes));
+
+                // 이미지를 리스트에 추가
+                imageList.add(bytes);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

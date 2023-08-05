@@ -40,7 +40,7 @@ public class ImageController {
     }
 
     @PostMapping("/search")
-    public ApiResponse<List<String>> postImageSearch(@RequestBody ImageSearchRequestDTO imageSearchRequestDTO) throws Exception {
+    public ApiResponse<List<byte[]>> postImageSearch(@RequestBody ImageSearchRequestDTO imageSearchRequestDTO) throws Exception {
 
         try {
 
