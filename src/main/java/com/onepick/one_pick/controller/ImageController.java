@@ -1,5 +1,7 @@
 package com.onepick.one_pick.controller;
 
+import java.util.List;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -9,7 +11,6 @@ import com.onepick.one_pick.common.ApiResponse;
 import com.onepick.one_pick.service.ImageService;
 import com.onepick.one_pick.service.dto.ImageRequestDTO;
 import com.onepick.one_pick.service.dto.ImageSearchRequestDTO;
-import com.onepick.one_pick.service.dto.ImageSearchResponseDTO;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -37,16 +38,15 @@ public class ImageController {
     }
 
     @PostMapping("/search")
-    public ApiResponse<ImageSearchResponseDTO> postImageSearch(@RequestBody ImageSearchRequestDTO imageSearchRequestDTO){
+    public ApiResponse<List<byte[]>> postImageSearch(@RequestBody ImageSearchRequestDTO imageSearchRequestDTO) throws Exception {
 
         try {
 
-            ImageSearchResponseDTO imageSearchResponseDTO = imageService.searchImage(imageSearchRequestDTO);
-            return ApiResponse.success("이미지 검색 성공", imageSearchResponseDTO);
+            return ApiResponse.success("이미지 저장 성공", imageService.searchImage(imageSearchRequestDTO));
         }catch (Exception e){
 
-            log.error("이미지 검색 실패: " + e.getMessage(), e);
-            return ApiResponse.fail(400, "이미지 검색 실패: " + e.getMessage());
+            log.error("이미지 저장 실패: " + e.getMessage(), e);
+            return ApiResponse.fail(400, "이미지 저장 실패: " + e.getMessage());
         }
     }
 }

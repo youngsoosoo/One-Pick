@@ -11,5 +11,6 @@ import lombok.Data;
 @Builder
 public class ImageSearchResponseDTO {
 
-    List<String> imagePaths;
+    List<byte[]> imageFileList;
+    List<String> fileNameList;
 }
