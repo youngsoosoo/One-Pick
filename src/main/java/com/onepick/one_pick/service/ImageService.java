@@ -98,6 +98,8 @@ public class ImageService {
             fileNameList.add(urlParts[urlParts.length - 1]);
         }
 
+        log.info("fileNameSize: " + fileNameList.size());
+
         return getObject(fileNameList, memberId);
     }
 
@@ -126,7 +128,7 @@ public class ImageService {
                 throw new RuntimeException(e);
             }
         });
-        
+        log.info("imageList: " + imageList.size());
         return imageList;
     }
 
