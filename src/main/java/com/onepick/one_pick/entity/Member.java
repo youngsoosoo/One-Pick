@@ -42,6 +42,8 @@ public class Member extends BaseEntity {
     //로그인 정보
     private String social;
 
+    private boolean preprocess;
+
     //권한 -여러 개의 권한을 소유
     @ElementCollection(fetch = FetchType.LAZY)
     @Builder.Default
@@ -54,8 +56,13 @@ public class Member extends BaseEntity {
         this.memberPassword = memberPassword;
     }
 
-    //권한 추가
+    // 권한 추가
     public void addRole(MemberRole memberRole){
         this.roleSet.add(memberRole);
+    }
+
+    // 전처리 여부
+    public void setPreprocess(boolean preprocess){
+        this.preprocess = preprocess;
     }
 }

@@ -14,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -67,14 +68,19 @@ public class ImageService {
 
         String keyword = imageSearchRequestDTO.getKeyword();
         Long memberId = imageSearchRequestDTO.getMemberId();
-        
-        // S3 폴더 주소
-        String url = onePickUrl + memberId;
-        
+
+        Member member = memberService.findMember(memberId);
+
         // AI 모델에 검색을 요청하는 메시지
         RestTemplate restTemplate = new RestTemplate();
         String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
-        String[] filePathList = restTemplate.getForObject(apiUrl + encodedKeyword + "/" + memberId, String[].class);
+        String[] filePathList = null;
+
+        if (member.isPreprocess()){
+            filePathList = restTemplate.getForObject(apiUrl + encodedKeyword + "/" + memberId, String[].class);
+        }else{
+            throw new RuntimeException("이미지 전처리 작업 필요!");
+        }
 
         List<String> fileNameList = new ArrayList<>();
 
@@ -116,5 +122,18 @@ public class ImageService {
         });
         
         return imageList;
+    }
+
+    @Async
+    public void imagePreprocess(Long memberId){
+
+        // AI 모델에 검색을 요청하는 메시지
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> responseEntity = restTemplate.postForEntity(apiUrl + memberId, null, String.class);
+        String result = responseEntity.getBody();
+
+        if (result.equals("done")){
+            memberService.savePreprocess(memberId);
+        }
     }
 }

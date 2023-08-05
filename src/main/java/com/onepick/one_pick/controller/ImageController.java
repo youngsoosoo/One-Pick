@@ -12,6 +12,7 @@ import com.onepick.one_pick.common.ApiResponse;
 import com.onepick.one_pick.service.ImageService;
 import com.onepick.one_pick.service.dto.ImageRequestDTO;
 import com.onepick.one_pick.service.dto.ImageSearchRequestDTO;
+import com.onepick.one_pick.service.dto.PreprocessRequestDTO;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -44,10 +45,28 @@ public class ImageController {
         try {
 
             return ApiResponse.success("이미지 검색 성공", imageService.searchImage(imageSearchRequestDTO));
+        }catch (RuntimeException e){
+
+            log.error("이미지 전처리 작업 필요: " + e.getMessage(), e);
+            return ApiResponse.fail(401, "이미지 전처리 작업 필요: " + e.getMessage());
         }catch (Exception e){
 
             log.error("이미지 검색 실패: " + e.getMessage(), e);
             return ApiResponse.fail(400, "이미지 검색 실패: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/preprocess")
+    public ApiResponse postPreprocess(@RequestBody PreprocessRequestDTO preprocessRequestDTO){
+
+        try {
+
+            imageService.imagePreprocess(preprocessRequestDTO.getMemberId());
+            return ApiResponse.success("전처리 작업 실행");
+        }catch (Exception e){
+
+            log.error("전처리 작업 실패: " + e.getMessage(), e);
+            return ApiResponse.fail(400, "전처리 작업 실패: " + e.getMessage());
         }
     }
 }

@@ -88,4 +88,13 @@ public class MemberService {
 
         return memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("회원 정보 찾기 실패"));
     }
+
+    // 전처리 저장
+    public void savePreprocess(Long memberId){
+
+        Member member = findMember(memberId);
+        member.setPreprocess(true);
+
+        memberRepository.save(member);
+    }
 }
