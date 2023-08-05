@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -62,7 +63,7 @@ public class ImageService {
     private String apiUrl;
 
     // 이미지 검색 메서드
-    public List<byte[]> searchImage(ImageSearchRequestDTO imageSearchRequestDTO) throws Exception {
+    public List<String> searchImage(ImageSearchRequestDTO imageSearchRequestDTO) throws Exception {
 
         String keyword = imageSearchRequestDTO.getKeyword();
         Long memberId = imageSearchRequestDTO.getMemberId();
@@ -70,10 +71,7 @@ public class ImageService {
         // S3 폴더 주소
         String url = onePickUrl + memberId;
         
-        log.info("S3 폴더 주소: " + url);
-        log.info("키워드 출력: " + keyword);
-        // AI 모델에 검색을 유도하는 메시지
-
+        // AI 모델에 검색을 요청하는 메시지
         RestTemplate restTemplate = new RestTemplate();
         String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
         String[] filePathList = restTemplate.getForObject(apiUrl + encodedKeyword + "/" + memberId, String[].class);
@@ -88,8 +86,6 @@ public class ImageService {
 
             // 배열의 마지막 요소를 파일명으로 추출
             fileNameList.add(urlParts[urlParts.length - 1]);
-
-            log.info(urlParts);
         }
 
         return getObject(fileNameList, memberId);
@@ -103,9 +99,9 @@ public class ImageService {
     /**
      * S3 bucket 파일 다운로드
      */
-    public List<byte[]> getObject(List<String> fileNameList, Long memberId) throws IOException {
+    public List<String> getObject(List<String> fileNameList, Long memberId) throws IOException {
 
-        List<byte[]> imageList = new ArrayList<>();
+        List<String> imageList = new ArrayList<>();
         fileNameList.forEach(fileName -> {
 
             try {
@@ -113,13 +109,12 @@ public class ImageService {
                 S3ObjectInputStream objectInputStream = o.getObjectContent();
 
                 byte[] bytes = IOUtils.toByteArray(objectInputStream);
-                imageList.add(bytes);
-                log.info("bytes" + Arrays.toString(bytes));
+                imageList.add(Arrays.toString(bytes));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });
-
+        
         return imageList;
     }
 }
