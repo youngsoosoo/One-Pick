@@ -3,16 +3,17 @@ package com.onepick.one_pick.config;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
@@ -35,7 +36,6 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.util.IOUtils;
-import com.onepick.one_pick.config.listener.JobCompletionNotificationListener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -50,58 +50,12 @@ public class BatchConfig {
 
     private final StepBuilderFactory stepBuilderFactory;
 
-    private List<Map<String, Object>> imageList = new ArrayList<>(); //Rest로 가져온 데이터를 리스트에 넣는다.
-    private int nextIndex = 0;//리스트의 데이터를 하나씩 인덱스를 통해 가져온다.
-
     private final AmazonS3 amazonS3;
 
     @Value("${aws.s3.bucket}")
     private String bucket;
 
-    private Long memberId;
-
-    Map<String, Object> imageInfo = new HashMap<>();
-
-    // S3 데이터 호출
-    public void method(Long member) {
-
-        try {
-            memberId = member;
-            nextIndex = 0;
-            imageList = new ArrayList<>();
-            ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request()
-                .withBucketName(bucket)
-                .withPrefix(memberId + "/");
-
-            ListObjectsV2Result listObjectsResult = amazonS3.listObjectsV2(listObjectsRequest);
-            List<S3ObjectSummary> objectSummaries = listObjectsResult.getObjectSummaries();
-            log.info(objectSummaries);
-
-            objectSummaries.forEach(objectSummary -> {
-
-                String key = objectSummary.getKey();
-
-                if (!key.startsWith(memberId + "/processed/")){
-                    S3Object s3Object = amazonS3.getObject(bucket, key);
-                    try (S3ObjectInputStream objectInputStream = s3Object.getObjectContent()) {
-                        byte[] bytes = IOUtils.toByteArray(objectInputStream);
-
-
-                        imageInfo = new HashMap<>();
-                        imageInfo.put("key", key);
-                        imageInfo.put("bytes", bytes);
-
-                        imageList.add(imageInfo);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
-        } catch (Exception e) {
-
-            log.error("S3 이미지 다운로드 실패: " + e.getMessage(), e);
-        }
-    }
+    private Long memberId = null;
 
     //Rest API로 데이터를 가져온다.
     @Bean
@@ -110,19 +64,61 @@ public class BatchConfig {
         // S3에서 데이터를 읽어오는 Reader
         return new ItemReader<Map<String, Object>>() {
 
+            private Iterator<S3ObjectSummary> objectSummaryIterator;
+
             @Override
-            public Map<String, Object> read(){
+            public Map<String, Object> read() {
 
-                Map<String, Object> imageInfo = null;
-
-                if (nextIndex < imageList.size()){
-                    imageInfo = imageList.get(nextIndex);
-                    nextIndex++;
+                if (objectSummaryIterator == null) {
+                    objectSummaryIterator = method().iterator();
                 }
 
-                return imageInfo;
+                if (objectSummaryIterator.hasNext()) {
+                    S3ObjectSummary objectSummary = objectSummaryIterator.next();
+                    return processImage(objectSummary.getKey());
+                }
+
+                return null; // No more items to read
+            }
+
+            // S3 데이터 호출
+            private List<S3ObjectSummary> method() {
+
+                try {
+                    log.info("memberId: " + memberId);
+                    ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request()
+                        .withBucketName(bucket)
+                        .withPrefix(memberId + "/");
+
+                    ListObjectsV2Result listObjectsResult = amazonS3.listObjectsV2(listObjectsRequest);
+
+                    return listObjectsResult.getObjectSummaries().stream()
+                        .filter(objectSummary -> !objectSummary.getKey().startsWith(memberId + "/processed/"))
+                        .collect(Collectors.toList());
+                }catch (Exception e) {
+
+                    log.error("S3 이미지 다운로드 실패: " + e.getMessage(), e);
+                    throw new RuntimeException("S3 이미지 다운로드 실패: " + e.getMessage());
+                }
             }
         };
+    }
+
+
+    private Map<String, Object> processImage(String key) {
+        try (S3Object s3Object = amazonS3.getObject(bucket, key);
+             S3ObjectInputStream objectInputStream = s3Object.getObjectContent()) {
+
+            byte[] bytes = IOUtils.toByteArray(objectInputStream);
+
+            Map<String, Object> imageInfo = new HashMap<>();
+            imageInfo.put("key", key);
+            imageInfo.put("bytes", bytes);
+
+            return imageInfo;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Map<String, Object> imageResult = null;
@@ -173,7 +169,6 @@ public class BatchConfig {
             @Override
             public void write(List<? extends Map<String, Object>> items) throws Exception {
 
-                log.info("S3 데이터 삽입 시작");
                 String resizedFolder = "resized"; // 리사이즈 된 이미지를 저장할 폴더 이름
 
                 String key = null;
@@ -211,13 +206,30 @@ public class BatchConfig {
             .build();
     }
 
+    Long startTime = null;
+    Long endTime = null;
+
     @Bean
     public Job myJob(Step mystep){
 
         return this.jobBuilderFactory.get("myJob")
             .incrementer(new RunIdIncrementer())
             .start(mystep)
-            .listener(new JobCompletionNotificationListener())
+            .listener(new JobExecutionListener() {
+                @Override
+                public void beforeJob(JobExecution jobExecution) {
+                    memberId = jobExecution.getJobParameters().getLong("memberId");
+                    startTime = System.currentTimeMillis();
+                }
+
+                @Override
+                public void afterJob(JobExecution jobExecution) {
+                    if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
+                        endTime = System.currentTimeMillis();
+                        log.info("Job 실행 종료, 걸리 시간: " + (endTime - startTime)/1000 + "s");
+                    }
+                }
+            })
             .build();
     }
 }

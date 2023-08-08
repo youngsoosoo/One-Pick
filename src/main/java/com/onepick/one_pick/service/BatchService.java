@@ -29,9 +29,9 @@ public class BatchService {
         try {
             JobParameters jobParameters = new JobParametersBuilder()
                 .addString("time", String.valueOf(System.currentTimeMillis()))
+                .addLong("memberId", memberId)
                 .toJobParameters();
 
-            batchConfig.method(memberId);
             jobLauncher.run(batchConfig.myJob(myStep), jobParameters);
         } catch (Exception e) {
             log.error("배치 작업 실패: " + e.getMessage(), e);
