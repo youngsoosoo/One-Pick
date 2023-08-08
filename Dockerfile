@@ -10,3 +10,7 @@ COPY ${JAR_FILE} /app/${CONTAINER_JAR_FILE}
 
 # Spring Boot를 실행하기 위한 entry point 지정
 ENTRYPOINT ["java", "-jar", "/app/One-Pick.jar"]
+
+# 시간 설정
+ENV TZ=Asia/Seoul
+RUN apk add --no-cache tzdata
