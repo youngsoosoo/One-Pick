@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.onepick.one_pick.common.ApiResponse;
+import com.onepick.one_pick.service.BatchService;
 import com.onepick.one_pick.service.ImageService;
 import com.onepick.one_pick.service.dto.ImageRequestDTO;
 import com.onepick.one_pick.service.dto.ImageSearchRequestDTO;
@@ -24,6 +25,8 @@ import lombok.extern.log4j.Log4j2;
 public class ImageController {
 
     private final ImageService imageService;
+
+    private final BatchService batchService;
 
     @PostMapping("")
     public ApiResponse postImage(@RequestBody ImageRequestDTO imageRequestDTO){
@@ -61,7 +64,9 @@ public class ImageController {
 
         try {
 
-            imageService.imagePreprocess(preprocessRequestDTO.getMemberId());
+            Long memberId = preprocessRequestDTO.getMemberId();
+            batchService.startBatchAsync(memberId);
+            imageService.imagePreprocess(memberId);
             return ApiResponse.success("전처리 작업 실행");
         }catch (Exception e){
 
