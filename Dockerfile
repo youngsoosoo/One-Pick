@@ -13,4 +13,5 @@ ENTRYPOINT ["java", "-jar", "/app/One-Pick.jar"]
 
 # 시간 설정
 ENV TZ=Asia/Seoul
-RUN apk add --no-cache tzdata
+# tzdata 설치 (apt 사용)
+RUN apt update && apt install -y tzdata
