@@ -128,7 +128,7 @@ public class ImageService {
                 throw new RuntimeException(e);
             }
         });
-        log.info("imageList: " + imageList.size());
+
         return imageList;
     }
 
