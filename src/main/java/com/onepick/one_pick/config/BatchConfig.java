@@ -121,7 +121,7 @@ public class BatchConfig {
         }
     }
 
-    private Map<String, Object> imageResult = null;
+    private Map<String, Object> imageResult = new HashMap<>();
 
     @Bean
     public ItemProcessor<Map<String, Object>, Map<String, Object>> itemProcessor() {
@@ -146,15 +146,22 @@ public class BatchConfig {
                     int resizedWidth = 224;
                     int resizedHeight = 224;
 
-                    Thumbnails.of(inputStream)
-                        .size(resizedWidth, resizedHeight) // 224x224 크기로 리사이징
-                        .outputFormat("jpeg")
-                        .toOutputStream(outputStream);
+                    try{
+                        Thumbnails.of(inputStream)
+                            .size(resizedWidth, resizedHeight) // 224x224 크기로 리사이징
+                            .outputFormat("jpeg")
+                            .toOutputStream(outputStream);
+                    }catch (IOException e){
+                        throw new RuntimeException("리사이징 중 에러 발생: " + e.getMessage(), e);
+                    }
+
 
                     imageResult.put("key", key);
                     imageResult.put("bytes", outputStream.toByteArray());
 
                     return imageResult;
+                }catch (IOException e) {
+                    throw new RuntimeException("리사이징 중 에러 발생: " + e.getMessage(), e);
                 }
             }
         };
