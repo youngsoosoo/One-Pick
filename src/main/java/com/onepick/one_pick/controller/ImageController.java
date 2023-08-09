@@ -67,11 +67,11 @@ public class ImageController {
             Long memberId = preprocessRequestDTO.getMemberId();
             batchService.startBatchAsync(memberId);
             imageService.imagePreprocess(memberId);
-            return ApiResponse.success("전처리 작업 실행");
+            return ApiResponse.success("이미지 리사이징 및 전처리 작업 실행");
         }catch (Exception e){
 
-            log.error("전처리 작업 실패: " + e.getMessage(), e);
-            return ApiResponse.fail(400, "전처리 작업 실패: " + e.getMessage());
+            log.error("이미지 리사이징 및 전처리 작업 실패: " + e.getMessage(), e);
+            return ApiResponse.fail(400, "이미지 리사이징 및 전처리 작업 실패: " + e.getMessage());
         }
     }
 }
