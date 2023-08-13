@@ -28,7 +28,6 @@ public class BatchService {
 
         try {
             JobParameters jobParameters = new JobParametersBuilder()
-                .addString("time", String.valueOf(System.currentTimeMillis()))
                 .addLong("memberId", memberId)
                 .toJobParameters();
 

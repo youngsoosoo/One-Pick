@@ -75,6 +75,7 @@ public class BatchConfig {
 
                 if (objectSummaryIterator.hasNext()) {
                     S3ObjectSummary objectSummary = objectSummaryIterator.next();
+                    log.info("S3 데이터 호출: " + objectSummary.getKey());
                     return processImage(objectSummary.getKey());
                 }
 
@@ -85,10 +86,10 @@ public class BatchConfig {
             private List<S3ObjectSummary> method() {
 
                 try {
-                    log.info("memberId: " + memberId);
+                    log.info("bucket: " + bucket + ", memberId: " + memberId);
                     ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request()
                         .withBucketName(bucket)
-                        .withPrefix(memberId + "/");
+                        .withPrefix(memberId + "/resized/");
 
                     ListObjectsV2Result listObjectsResult = amazonS3.listObjectsV2(listObjectsRequest);
 
@@ -104,6 +105,7 @@ public class BatchConfig {
         };
     }
 
+    Map<String, Object> imageInfo = new HashMap<>();
 
     private Map<String, Object> processImage(String key) {
         try (S3Object s3Object = amazonS3.getObject(bucket, key);
@@ -111,7 +113,7 @@ public class BatchConfig {
 
             byte[] bytes = IOUtils.toByteArray(objectInputStream);
 
-            Map<String, Object> imageInfo = new HashMap<>();
+            imageInfo = new HashMap<>();
             imageInfo.put("key", key);
             imageInfo.put("bytes", bytes);
 
@@ -213,8 +215,8 @@ public class BatchConfig {
             .build();
     }
 
-    Long startTime = null;
-    Long endTime = null;
+    private Long startTime = null;
+    private Long endTime = null;
 
     @Bean
     public Job myJob(Step mystep){
@@ -225,6 +227,9 @@ public class BatchConfig {
             .listener(new JobExecutionListener() {
                 @Override
                 public void beforeJob(JobExecution jobExecution) {
+                    memberId = null;
+                    imageInfo = null;
+                    imageResult = null;
                     memberId = jobExecution.getJobParameters().getLong("memberId");
                     startTime = System.currentTimeMillis();
                 }
